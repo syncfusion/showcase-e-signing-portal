@@ -1,0 +1,20 @@
+{
+  "baseUrl": "http://localhost:4319/e-signing-portal/react/",
+  "routes": [
+    { "name": "documents", "path": "./documents", "settleMs": 1500 },
+    { "name": "sign-offer-letter", "path": "./sign/employment-offer-letter", "settleMs": 6000 },
+    { "name": "review-direct-deposit", "path": "./sign/direct-deposit-authorization", "settleMs": 6000 }
+  ],
+  "themes": {
+    "light": { "colorScheme": "light" },
+    "dark": { "colorScheme": "dark" }
+  },
+  "screenshotDir": "../../validation/screenshots/prototype-check",
+  "allowTrialBanner": false,
+  "colourRules": [],
+  "notes": {
+    "themes.colorScheme": "This app stores nothing in the browser, so its theme cannot be set through localStorage or a query parameter. The copied browser-check.mjs has one added line that passes themes.<name>.colorScheme to the browser context, and the app follows prefers-color-scheme.",
+    "complete route": "/complete/:documentId redirects to /documents unless a document was signed in this session, so it is covered by journey-check.mjs, not here.",
+    "colourRules": "None: the app has no chart or banded value (app-plan.md, Colour semantics)."
+  }
+}
