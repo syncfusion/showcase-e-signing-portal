@@ -1,0 +1,65 @@
+{
+  "baseUrl": "http://127.0.0.1:5180/",
+  "routes": [
+    {
+      "name": "documents",
+      "path": "./documents",
+      "settleMs": 1500
+    },
+    {
+      "name": "sign-offer-letter",
+      "path": "./sign/employment-offer-letter",
+      "settleMs": 6000
+    },
+    {
+      "name": "sign-confidentiality-agreement",
+      "path": "./sign/confidentiality-agreement",
+      "settleMs": 6000
+    },
+    {
+      "name": "sign-handbook",
+      "path": "./sign/handbook-acknowledgment",
+      "settleMs": 6000
+    },
+    {
+      "name": "review-direct-deposit",
+      "path": "./sign/direct-deposit-authorization",
+      "settleMs": 6000
+    },
+    {
+      "name": "cta-review-and-sign-employment-offer-letter",
+      "path": "./documents",
+      "click": [
+        "Review and sign Employment Offer Letter"
+      ],
+      "expectHeading": "Employment Offer Letter",
+      "themeSwitch": false,
+      "settleMs": 2500
+    }
+  ],
+  "themes": {
+    "light": {
+      "query": {
+        "theme": "light"
+      }
+    },
+    "dark": {
+      "query": {
+        "theme": "dark"
+      }
+    }
+  },
+  "themeSwitch": {
+    "button": "Switch to (light|dark) theme",
+    "settleMs": 2000
+  },
+  "screenshotDir": "../../openspec/changes/port-angular/validation/screenshots/local",
+  "allowTrialBanner": false,
+  "colourRules": [],
+  "notes": {
+    "themes": "The app keeps the theme in sessionStorage, not localStorage; the browser check sets it through ?theme=light|dark, which the app reads at startup (src/index.html).",
+    "complete route": "/complete/:documentId redirects to /documents unless a document was signed in this session; the reference journey (frontend/react/journey-check.mjs, run against this port) covers it.",
+    "colourRules": "None: the app has no chart or banded value (reference app-plan.md, Colour semantics).",
+    "server": "Production build served by ng serve --configuration production on port 5180, from the root (source-only port, no base path)."
+  }
+}

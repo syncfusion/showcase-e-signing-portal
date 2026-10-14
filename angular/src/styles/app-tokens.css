@@ -1,0 +1,37 @@
+/* App-specific component tokens (design/DESIGN.md). Semantic roles only; raw values stay in tokens.css. */
+:root {
+  --app-topbar-height: 56px;
+  --app-topbar-surface: var(--color-sf-bg-surface);
+  --app-topbar-border: var(--color-sf-border-primary);
+  --app-content-max: 1200px;
+  --app-avatar-size: 32px;
+  --app-avatar-bg: var(--color-sf-bg-brand-subtle);
+  --app-avatar-fg: var(--color-sf-fg-brand-primary);
+
+  --app-doc-card-surface: var(--app-card-bg);
+  --app-doc-card-border: var(--app-card-border);
+  --app-doc-icon-bg: var(--color-sf-bg-brand-subtle);
+  --app-doc-icon-fg: var(--color-sf-fg-brand-primary);
+
+  --app-badge-info-bg: var(--color-sf-bg-info-primary);
+  --app-badge-info-fg: var(--color-sf-fg-info-primary);
+  --app-badge-warning-bg: var(--color-sf-bg-warning-primary);
+  --app-badge-warning-fg: var(--color-sf-fg-warning-primary);
+  --app-badge-success-bg: var(--color-sf-bg-success-primary);
+  --app-badge-success-fg: var(--color-sf-fg-success-primary);
+  --app-badge-neutral-bg: var(--color-sf-bg-neutral-primary);
+  --app-badge-neutral-fg: var(--color-sf-fg-neutral-primary);
+
+  --app-sign-subheader-surface: var(--color-sf-bg-surface);
+  --app-sign-panel-width: 280px;
+  --app-viewer-canvas: var(--color-sf-bg-surface-muted);
+  --app-field-required: var(--color-sf-fg-info-primary);
+  --app-field-signed: var(--color-sf-fg-success-primary);
+  --app-field-signed-bg: var(--color-sf-bg-success-primary);
+  --app-touch-target: 44px;
+  /* The Next button over the document: brand fill, surface-coloured text, in both themes. */
+  --app-next-flag-bg: var(--color-sf-fg-brand-primary);
+  --app-next-flag-bg-hover: color-mix(in srgb, var(--color-sf-fg-brand-primary) 82%, var(--color-sf-fg-primary));
+  --app-next-flag-fg: var(--color-sf-bg-surface);
+  --app-next-flag-point: 14px;
+}

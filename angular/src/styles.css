@@ -1,0 +1,252 @@
+@import "tailwindcss";
+/* Global styles, from the React reference's src/styles/app.css. The Syncfusion Tailwind 3 theme is linked from
+   index.html (scripts/copy-theme.mjs); the signature fonts are listed in angular.json. */
+@import "./styles/tokens.css";
+@import "./styles/app-tokens.css";
+
+@layer base {
+  /* Tailwind 4's preflight gives buttons the arrow; everything clickable shows the pointer (design-system.md). */
+  button:not(:disabled), [role="button"], a[href], summary, label[for] { cursor: pointer; }
+}
+
+html, body, app-root { height: 100%; }
+app-root { display: block; }
+body { margin: 0; font-family: var(--sf-font-sans); font-size: 14px; background: var(--app-shell-bg); color: var(--color-sf-fg-primary); }
+:focus-visible { outline: 2px solid var(--app-focus-ring); outline-offset: 2px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.text-link { color: var(--color-sf-fg-brand-primary); font-weight: 600; text-decoration: underline; }
+
+/* ---- Shell: top bar (Syncfusion AppBar) above a scroll-contained main area ---- */
+.app-frame { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.e-appbar.app-topbar { flex: none; height: var(--app-topbar-height); min-height: var(--app-topbar-height); gap: var(--sf-space-3); padding: 0 var(--sf-space-5);
+  background: var(--app-topbar-surface); color: var(--color-sf-fg-primary); border-bottom: 1px solid var(--app-topbar-border); box-shadow: none; }
+.app-brand { display: inline-flex; align-items: center; gap: var(--sf-space-2); font-weight: 700; font-size: 15px; color: var(--color-sf-fg-primary); text-decoration: none; border-radius: var(--sf-radius-sm); }
+.app-brand:hover { color: var(--color-sf-fg-brand-primary); }
+.app-brand:active { color: var(--color-sf-fg-primary); }
+.app-brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: var(--sf-radius-md); background: var(--app-doc-icon-bg); color: var(--app-doc-icon-fg); }
+.app-toplink { display: inline-flex; align-items: center; gap: var(--sf-space-2); margin-left: var(--sf-space-4); padding: 6px var(--sf-space-3); border-radius: var(--sf-radius-md);
+  font-weight: 600; color: var(--color-sf-fg-secondary); text-decoration: none; border: 1px solid transparent; }
+.app-toplink:hover { background: var(--color-sf-bg-surface-hover); color: var(--color-sf-fg-primary); border-color: var(--color-sf-border-brand); }
+.app-toplink.active { background: var(--app-nav-active-bg); color: var(--app-nav-active-fg); }
+.app-icon-button { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--sf-radius-md); border: 1px solid transparent; background: transparent; color: var(--color-sf-fg-secondary); }
+.app-icon-button:hover { background: var(--color-sf-bg-surface-hover); color: var(--color-sf-fg-primary); border-color: var(--color-sf-border-brand); }
+.app-icon-button:active { background: var(--color-sf-bg-brand-subtle); }
+.app-profile { display: inline-flex; align-items: center; gap: var(--sf-space-2); padding-left: var(--sf-space-3); margin-left: var(--sf-space-1); border-left: 1px solid var(--app-topbar-border); }
+.app-avatar { display: grid; place-items: center; width: var(--app-avatar-size); height: var(--app-avatar-size); border-radius: 999px; background: var(--app-avatar-bg); color: var(--app-avatar-fg); font-weight: 700; font-size: 12px; }
+.app-profile-text { display: flex; flex-direction: column; line-height: 1.25; }
+.app-profile-name { font-weight: 600; font-size: 13px; }
+.app-profile-role { font-size: 12px; color: var(--color-sf-fg-secondary); }
+/* App buttons that carry a Lucide icon beside their text (not the PDF Viewer's own toolbar buttons). */
+.e-btn.app-reset, .doc-actions .e-btn, .complete-actions .e-btn, .sign-actions .e-btn, .state-actions .e-btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--sf-space-2); }
+.app-main { flex: 1; min-height: 0; overflow: auto; }
+@media (max-width: 639.98px) {
+  .e-appbar.app-topbar { padding: 0 var(--sf-space-3); gap: var(--sf-space-2); }
+  .app-brand-name, .app-toplink .btn-text, .app-reset .btn-text, .app-profile-text { display: none; }
+  .app-toplink { margin-left: 0; }
+  .app-profile { padding-left: var(--sf-space-2); }
+}
+
+/* Toasts sit under the top bar. */
+.e-toast-container.e-toast-top-right { top: calc(var(--app-topbar-height) + var(--sf-space-3)) !important; }
+.app-dialog .e-dlg-content p { margin: 0; line-height: 1.5; color: var(--color-sf-fg-primary); }
+
+/* ---- Pages ---- */
+.page { max-width: var(--app-content-max); margin: 0 auto; padding: var(--sf-space-6) var(--sf-space-5) calc(var(--sf-space-6) * 2); }
+.page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--sf-space-3) var(--sf-space-5); margin-bottom: var(--sf-space-6); }
+.page-header h1 { font-size: 24px; line-height: 32px; font-weight: 600; margin: 0; }
+.page-header p { margin: var(--sf-space-1) 0 0; color: var(--color-sf-fg-secondary); }
+.page-note { font-size: 13px; }
+.page h2 { display: flex; align-items: center; gap: var(--sf-space-2); font-size: 16px; font-weight: 600; margin: 0 0 var(--sf-space-3); }
+.page h2 .count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; font-size: 12px; background: var(--app-badge-neutral-bg); color: var(--app-badge-neutral-fg); }
+.page section + section { margin-top: calc(var(--sf-space-6) + var(--sf-space-2)); }
+
+.state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sf-space-2); padding: calc(var(--sf-space-6) * 1.5) var(--sf-space-6); text-align: center; color: var(--color-sf-fg-secondary); }
+.state p { margin: 0; }
+.state.error > svg { color: var(--color-sf-fg-danger-primary); }
+.state-title { font-weight: 600; font-size: 16px; color: var(--color-sf-fg-primary); }
+.state-actions { margin-top: var(--sf-space-3); display: flex; gap: var(--sf-space-3); }
+
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px var(--sf-space-2); border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 16px; white-space: nowrap; }
+.status-badge.tone-info { background: var(--app-badge-info-bg); color: var(--app-badge-info-fg); }
+.status-badge.tone-warning { background: var(--app-badge-warning-bg); color: var(--app-badge-warning-fg); }
+.status-badge.tone-success { background: var(--app-badge-success-bg); color: var(--app-badge-success-fg); }
+
+/* ---- My Documents: Syncfusion Card per document ---- */
+.doc-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sf-space-4); grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1023.98px) { .doc-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 639.98px) { .doc-grid { grid-template-columns: 1fr; } }
+.doc-grid > li { display: flex; }
+.e-card.doc-item, .e-card.complete-panel, .e-card.field-panel { background: var(--app-doc-card-surface); border: 1px solid var(--app-doc-card-border); border-radius: var(--sf-radius-lg); box-shadow: var(--app-card-shadow); color: var(--color-sf-fg-primary); line-height: normal; }
+/* The card surfaces do nothing when clicked, so the theme's hover tint is turned off. */
+.e-card.doc-item:hover, .e-card.complete-panel:hover, .e-card.field-panel:hover { background: var(--app-doc-card-surface); border-color: var(--app-doc-card-border); box-shadow: var(--app-card-shadow); }
+.e-card.doc-item { width: 100%; justify-content: flex-start; }
+.doc-item .e-card-header { display: flex; align-items: flex-start; gap: var(--sf-space-3); padding: var(--sf-space-4) var(--sf-space-4) var(--sf-space-2); min-height: 0; }
+.doc-item .e-card-header .e-card-header-caption { padding: 0; min-width: 0; }
+.doc-item .e-card-header .e-card-header-caption .e-card-header-title { font-size: 16px; font-weight: 600; line-height: 22px; color: var(--color-sf-fg-primary); white-space: normal; }
+.doc-item .e-card-header .e-card-header-caption .e-card-sub-title { font-size: 13px; line-height: 18px; color: var(--color-sf-fg-secondary); white-space: normal; padding: 0; }
+.doc-icon { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--sf-radius-md); background: var(--app-doc-icon-bg); color: var(--app-doc-icon-fg); }
+.doc-item .e-card-content { padding: var(--sf-space-2) var(--sf-space-4) var(--sf-space-3); flex: 1; }
+.doc-meta { display: flex; flex-direction: column; align-items: flex-start; gap: var(--sf-space-3); }
+.doc-meta dl, .complete-facts { margin: 0; display: grid; gap: var(--sf-space-1); width: 100%; }
+.doc-meta dl > div, .complete-facts > div { display: flex; justify-content: space-between; gap: var(--sf-space-3); font-size: 13px; line-height: 20px; }
+.doc-meta dt, .complete-facts dt { color: var(--color-sf-fg-secondary); }
+.doc-meta dd, .complete-facts dd { margin: 0; font-weight: 500; text-align: right; }
+.doc-item .e-card-actions { padding: var(--sf-space-3) var(--sf-space-4) var(--sf-space-4); border-top: 1px solid var(--app-doc-card-border); }
+.doc-actions, .complete-actions { display: flex; flex-wrap: wrap; gap: var(--sf-space-2); width: 100%; }
+.doc-actions .e-btn, .complete-actions .e-btn { margin: 0; }
+
+/* ---- Signing Complete ---- */
+.complete-page { display: flex; justify-content: center; padding-top: calc(var(--sf-space-6) * 2); }
+.e-card.complete-panel { width: 100%; max-width: 560px; }
+.complete-panel .e-card-header { display: flex; align-items: flex-start; gap: var(--sf-space-3); padding: var(--sf-space-6) var(--sf-space-6) var(--sf-space-3); }
+.complete-panel .e-card-header .e-card-header-caption { padding: 0; min-width: 0; }
+.complete-panel .e-card-header .e-card-header-caption .e-card-header-title { font-size: 24px; line-height: 32px; font-weight: 600; margin: 0; color: var(--color-sf-fg-primary); white-space: normal; }
+.complete-panel .e-card-header .e-card-header-caption .e-card-sub-title { font-size: 14px; line-height: 20px; color: var(--color-sf-fg-secondary); white-space: normal; padding: var(--sf-space-1) 0 0; }
+.complete-icon { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 999px; background: var(--app-badge-success-bg); color: var(--app-badge-success-fg); }
+.complete-panel .e-card-content { padding: var(--sf-space-3) var(--sf-space-6); }
+.complete-facts { padding: var(--sf-space-3) var(--sf-space-4); border: 1px solid var(--app-doc-card-border); border-radius: var(--sf-radius-md); background: var(--color-sf-bg-surface-muted); }
+.complete-note { margin-top: var(--sf-space-3); font-size: 13px; line-height: 20px; color: var(--color-sf-fg-secondary); }
+.complete-panel .e-card-actions { padding: var(--sf-space-3) var(--sf-space-6) var(--sf-space-6); }
+
+/* ---- Sign Document ---- */
+.sign-page { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.sign-subheader { flex: none; display: flex; align-items: center; gap: var(--sf-space-3); padding: var(--sf-space-3) var(--sf-space-5); background: var(--app-sign-subheader-surface); border-bottom: 1px solid var(--app-topbar-border); }
+.sign-back { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--sf-radius-md); color: var(--color-sf-fg-secondary); border: 1px solid var(--color-sf-border-primary); }
+.sign-back:hover { background: var(--color-sf-bg-surface-hover); color: var(--color-sf-fg-primary); border-color: var(--color-sf-border-brand); }
+.sign-titleblock { min-width: 0; flex: 1; }
+.sign-titleblock h1 { margin: 0; font-size: 16px; line-height: 22px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sign-status { margin: 2px 0 0; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--app-field-required); }
+.sign-status.done, .sign-page[data-mode="review"] .sign-status { color: var(--app-field-signed); }
+.sign-actions { flex: none; display: flex; gap: var(--sf-space-2); }
+.sign-actions .e-btn { min-height: 36px; }
+.sign-body { flex: 1; min-height: 0; display: flex; }
+.viewer-wrap { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; }
+.viewer-area { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--app-viewer-canvas); }
+/* Next over the document: a flag at the viewer's left edge, half-way down, pointing at the field Next has just
+   brought to the middle of the view. It stays put while the document scrolls. */
+.next-flag { position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 4; display: inline-flex; align-items: center; gap: var(--sf-space-2);
+  min-height: var(--app-touch-target); padding: 0 calc(var(--sf-space-4) + var(--app-next-flag-point)) 0 var(--sf-space-3); border: 0;
+  background: var(--app-next-flag-bg); color: var(--app-next-flag-fg); font-weight: 700; font-size: 14px; box-shadow: var(--app-card-shadow);
+  clip-path: polygon(0 0, calc(100% - var(--app-next-flag-point)) 0, 100% 50%, calc(100% - var(--app-next-flag-point)) 100%, 0 100%); }
+.next-flag[data-beside="viewer"] { padding-left: var(--sf-space-2); padding-right: calc(var(--sf-space-2) + var(--app-next-flag-point)); }
+.next-flag[data-beside="viewer"] .next-flag-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.next-flag:hover { background: var(--app-next-flag-bg-hover); }
+.next-flag:active { background: var(--color-sf-fg-primary); }
+.next-flag:focus-visible { outline-offset: -4px; outline-color: var(--app-next-flag-fg); }
+@media (max-width: 1023.98px) { .next-flag { top: auto; bottom: var(--sf-space-5); transform: none; } }
+.viewer-area > .state { height: 100%; }
+/* One loading indicator at a time: the viewer shows its own spinner while it loads, so it stays hidden
+   behind the app's "Loading document…" until the document is ready. */
+.viewer-area[data-viewer-state="loading"] .e-pdfviewer { visibility: hidden; }
+.e-card.field-panel { flex: none; width: var(--app-sign-panel-width); border-radius: 0; border-width: 0 0 0 1px; box-shadow: none; justify-content: flex-start; overflow-x: hidden; overflow-y: auto; }
+.field-panel .e-card-header, .field-panel .e-card-content { width: 100%; box-sizing: border-box; }
+.field-panel .e-card-header { padding: var(--sf-space-4) var(--sf-space-4) var(--sf-space-2); min-height: 0; }
+.field-panel .e-card-header .e-card-header-caption { padding: 0; }
+.field-panel .e-card-header .e-card-header-caption .e-card-header-title { margin: 0; font-size: 12px; line-height: 16px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-sf-fg-secondary); }
+.field-panel .e-card-content { padding: 0 var(--sf-space-3) var(--sf-space-4); }
+.field-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sf-space-2); }
+.field-row { display: flex; align-items: flex-start; gap: var(--sf-space-3); width: 100%; min-height: var(--app-touch-target); padding: var(--sf-space-2) var(--sf-space-3); text-align: left;
+  border: 1px solid var(--color-sf-border-primary); border-radius: var(--sf-radius-md); background: var(--color-sf-bg-surface); color: var(--color-sf-fg-primary); }
+.field-row:not(:disabled):hover { background: var(--color-sf-bg-surface-hover); border-color: var(--color-sf-border-brand); }
+.field-row:not(:disabled):active { background: var(--color-sf-bg-brand-subtle); }
+.field-row:disabled { opacity: 0.6; }
+.field-mark { flex: none; display: grid; place-items: center; width: 18px; height: 18px; margin-top: 2px; border-radius: 999px; border: 2px solid var(--app-field-required); color: var(--app-field-signed); }
+.field-row.filled .field-mark { border-color: var(--app-field-signed); background: var(--app-field-signed-bg); }
+.field-text { display: flex; flex-direction: column; min-width: 0; }
+.field-label { font-weight: 600; font-size: 13px; line-height: 18px; }
+.field-state { font-size: 12px; line-height: 16px; color: var(--color-sf-fg-secondary); }
+.field-row.filled .field-state { color: var(--app-field-signed); font-weight: 600; }
+.field-item { display: flex; align-items: stretch; gap: var(--sf-space-2); }
+.field-item .field-row { flex: 1; min-width: 0; }
+.field-clear { flex: none; align-self: center; min-height: 32px; padding: 0 var(--sf-space-2); border-radius: var(--sf-radius-md); border: 1px solid var(--color-sf-border-primary);
+  background: var(--color-sf-bg-surface); color: var(--color-sf-fg-secondary); font-size: 12px; font-weight: 600; }
+.field-clear:not(:disabled):hover { background: var(--color-sf-bg-surface-hover); color: var(--color-sf-fg-primary); border-color: var(--color-sf-border-brand); }
+.field-clear:not(:disabled):active { background: var(--color-sf-bg-brand-subtle); }
+.e-btn.fields-button { display: none; }
+.fields-dialog .field-hint { margin-top: var(--sf-space-3); }
+.field-hint { margin-top: var(--sf-space-4); font-size: 12px; line-height: 18px; color: var(--color-sf-fg-secondary); }
+@media (max-width: 1023.98px) {
+  .e-card.field-panel { display: none; }
+  .sign-actions .e-btn.fields-button { display: inline-flex; }
+  .sign-subheader { flex-wrap: wrap; padding: var(--sf-space-3); }
+}
+@media (max-width: 639.98px) {
+  .sign-actions { width: 100%; }
+  .sign-actions .e-btn { flex: 1; min-height: var(--app-touch-target); }
+  .page { padding: var(--sf-space-5) var(--sf-space-3) var(--sf-space-6); }
+}
+
+/* The signature dialog's drawing area and the PDF page stay white in dark mode: a document is paper (DESIGN.md). */
+
+/* Signature dialog, Type tab: the theme draws the four font previews at 13px, too small to compare. No viewer
+   property sizes them, so they are enlarged here; the theme's fade strip would cover text at this size. */
+.e-pv-signature-window .e-pv-font-sign { font-size: 26px; line-height: 1.4; white-space: nowrap; }
+.e-pv-signature-window .e-pv-signature-text::after { display: none; }
+
+/* ---- Angular port only ---- */
+/* The viewer's host is the <ejs-pdfviewer> element itself (the React wrapper renders a block div). As an inline
+   element it reports clientHeight 0, and the viewer then sizes its signature dialog for a short screen (canvas 250px,
+   12px font previews). A block filling the viewer area gives the same 305px canvas and 26px previews as the reference. */
+ejs-pdfviewer { display: block; height: 100%; }
+
+/* Keyboard focus is always visible (factory design-system.md, "Keyboard focus is always visible"): the AppBar
+   theme's unlayered rules drop the outline on its links and buttons, and the viewer's page-count box draws none. */
+.app-brand:focus-visible, .app-toplink:focus-visible, .app-icon-button:focus-visible,
+.e-pdfviewer [id$="_totalPage"]:focus-visible { outline: 2px solid var(--app-focus-ring) !important; outline-offset: 2px; }
+
+/* A panel Card has no pressed or hover state (design-system.md, "Focus rings show where the keyboard is"): the
+   theme's .e-card:active border and the shared card hover shadow appeared on the field panel while a field row was
+   pressed. */
+.e-card.field-panel:hover, .e-card.field-panel:active { box-shadow: none; border-color: var(--app-doc-card-border); background: var(--app-doc-card-surface); }
+.e-card.doc-item:active, .e-card.complete-panel:active { border-color: var(--app-doc-card-border); }
+
+/* A page heading takes focus from code after a navigation (for screen readers); it is not a control, so it draws no
+   ring (design-system.md, "Moving focus from code draws no ring after a mouse action"). */
+h1[tabindex="-1"]:focus { outline: none; }
+
+/* Syncfusion's accent is the app's brand (design-system.md; Sarwan, 2026-10-14: "1", brand blue for the Angular
+   port). The Tailwind 3 theme's primary is indigo; its --color-sf-primary variables are mapped to the brand blue of
+   the token file for both themes. The theme sets them on :root and .e-dark-mode; these selectors come later and
+   outrank them. White text keeps at least 4.5:1 on every fill. */
+:root, :root[data-theme="light"] {
+  --app-brand-fill: var(--sf-color-blue-600);          /* #175cd3 */
+  --app-brand-primary: rgba(23, 92, 211);              /* the same blue in the theme's own rgba() form */
+  --app-brand-fill-hover: #1849a9;
+  --app-brand-fill-pressed: #194185;
+  --app-brand-fill-disabled: #b2ccff;
+  --app-brand-light: #528bff;
+  --app-brand-lighter: var(--sf-color-blue-50);
+}
+:root[data-theme="dark"], :root.e-dark-mode {
+  --app-brand-fill: #2563eb;
+  --app-brand-primary: rgba(37, 99, 235);
+  --app-brand-fill-hover: #1d4ed8;
+  --app-brand-fill-pressed: #1e40af;
+  --app-brand-fill-disabled: #1e3a8a;
+  --app-brand-light: #1e40af;
+  --app-brand-lighter: #172554;
+}
+:root, :root.e-dark-mode {
+  --color-sf-primary: var(--app-brand-primary);
+  --color-sf-primary-light: var(--app-brand-light);
+  --color-sf-primary-lighter: var(--app-brand-lighter);
+  --color-sf-primary-dark: var(--app-brand-fill-hover);
+  --color-sf-primary-darker: var(--app-brand-fill-pressed);
+  --color-sf-primary-text-color: #fff;
+  --color-sf-primary-text: #fff;
+  --color-sf-primary-text-hover: #fff;
+  --color-sf-primary-text-focus: #fff;
+  --color-sf-primary-text-pressed: #fff;
+  --color-sf-primary-text-disabled: #fff;
+  --color-sf-primary-bg-color: var(--app-brand-fill);
+  --color-sf-primary-border-color: var(--app-brand-fill);
+  --color-sf-primary-bg-color-hover: var(--app-brand-fill-hover);
+  --color-sf-primary-border-color-hover: var(--app-brand-fill-hover);
+  --color-sf-primary-bg-color-focus: var(--app-brand-fill-hover);
+  --color-sf-primary-border-color-focus: var(--app-brand-fill-hover);
+  --color-sf-primary-bg-color-pressed: var(--app-brand-fill-pressed);
+  --color-sf-primary-border-color-pressed: var(--app-brand-fill-pressed);
+  --color-sf-primary-bg-color-disabled: var(--app-brand-fill-disabled);
+  --color-sf-primary-border-color-disabled: var(--app-brand-fill-disabled);
+  --color-sf-primary-outline: var(--color-sf-fg-brand-primary);
+}

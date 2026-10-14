@@ -1,0 +1,31 @@
+    <!-- Syncfusion Card markup (CSS only). The surface itself is not clickable; the action row holds the one action. -->
+    <article class="e-card doc-item" [attr.data-document]="card().doc.id" [attr.aria-labelledby]="'doc-' + card().doc.id">
+      <div class="e-card-header">
+        <span class="doc-icon" aria-hidden="true"><svg lucideFileText [size]="20"></svg></span>
+        <div class="e-card-header-caption">
+          <div class="e-card-header-title" [id]="'doc-' + card().doc.id">{{ card().doc.title }}</div>
+          <div class="e-card-sub-title">From {{ card().doc.sender.name }}, {{ card().doc.sender.organisation }}</div>
+        </div>
+      </div>
+      <div class="e-card-content">
+        <div class="doc-meta">
+          <app-status-badge [badge]="card().badge" />
+          <dl>
+            <div><dt>Received</dt><dd>{{ card().received }}</dd></div>
+            @if (card().done) { <div><dt>Signed</dt><dd>{{ card().signed }}</dd></div> }
+            @else if (card().due) { <div><dt>Due</dt><dd>{{ card().due }}</dd></div> }
+            <div><dt>Length</dt><dd>{{ card().length }}</dd></div>
+          </dl>
+        </div>
+      </div>
+      <div class="e-card-actions">
+        <div class="doc-actions">
+          @if (card().done) {
+            <button ejs-button cssClass="e-outline" (click)="openDoc.emit(card().doc)" [attr.aria-label]="'Review ' + card().doc.title"><svg lucideEye [size]="16"></svg><span>Review</span></button>
+            <button ejs-button cssClass="e-outline" (click)="downloadDoc.emit(card().doc)" [attr.aria-label]="'Download ' + card().doc.title"><svg lucideDownload [size]="16"></svg><span>Download</span></button>
+          } @else {
+            <button ejs-button cssClass="e-primary" (click)="openDoc.emit(card().doc)" [attr.aria-label]="'Review and sign ' + card().doc.title"><svg lucidePenLine [size]="16"></svg><span>Review and sign</span></button>
+          }
+        </div>
+      </div>
+    </article>

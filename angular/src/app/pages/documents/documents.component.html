@@ -1,0 +1,30 @@
+<div class="page documents-page">
+  <header class="page-header">
+    <div>
+      <h1 tabindex="-1">My Documents</h1>
+      <p data-testid="documents-summary">
+        @if (groups().ready.length === 0) { Nothing is waiting for your signature. }
+        @else { {{ groups().ready.length }} {{ groups().ready.length === 1 ? 'document needs' : 'documents need' }} your signature. }
+      </p>
+    </div>
+    <p class="page-note">Sample portal: signing stays in this tab and nothing is sent.</p>
+  </header>
+
+  <section aria-labelledby="ready-heading" data-testid="ready-section">
+    <h2 id="ready-heading">Ready to sign <span class="count">{{ groups().ready.length }}</span></h2>
+    @if (groups().ready.length) {
+      <ul class="doc-grid">
+        @for (card of groups().ready; track card.doc.id) { <li app-doc-card [card]="card" (openDoc)="open($event)" (downloadDoc)="download($event)"></li> }
+      </ul>
+    } @else { <app-empty-state message="You're all caught up." /> }
+  </section>
+
+  <section aria-labelledby="completed-heading" data-testid="completed-section">
+    <h2 id="completed-heading">Completed <span class="count">{{ groups().completed.length }}</span></h2>
+    @if (groups().completed.length) {
+      <ul class="doc-grid">
+        @for (card of groups().completed; track card.doc.id) { <li app-doc-card [card]="card" (openDoc)="open($event)" (downloadDoc)="download($event)"></li> }
+      </ul>
+    } @else { <app-empty-state message="Signed documents appear here." /> }
+  </section>
+</div>

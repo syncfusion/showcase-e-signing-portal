@@ -1,0 +1,52 @@
+<div class="app-frame">
+  <ejs-appbar colorMode="Inherit" cssClass="app-topbar">
+    <a routerLink="/documents" class="app-brand" aria-label="E-Signing Portal, My Documents">
+      <span class="app-brand-mark" aria-hidden="true"><svg lucideFilePenLine [size]="18"></svg></span>
+      <span class="app-brand-name">E-Signing Portal</span>
+    </a>
+    <a routerLink="/documents" routerLinkActive="active" class="app-toplink" title="My Documents">
+      <svg lucideFiles [size]="16"></svg><span class="btn-text">My Documents</span>
+    </a>
+    <div class="e-appbar-spacer"></div>
+    <button ejs-button cssClass="e-outline app-reset" [disabled]="!store.load.ok" (click)="openReset()"
+      title="Return every document to its original state" aria-label="Reset demo">
+      <svg lucideRotateCcw [size]="16"></svg><span class="btn-text">Reset demo</span>
+    </button>
+    <button type="button" class="app-icon-button" (click)="theme.toggle()" [title]="themeLabel()" [attr.aria-label]="themeLabel()">
+      @if (theme.theme() === 'dark') { <svg lucideSun [size]="20"></svg> } @else { <svg lucideMoon [size]="20"></svg> }
+    </button>
+    @if (profile) {
+      <div class="app-profile" [title]="'Signed in as ' + profile.fullName">
+        <span class="app-avatar" aria-hidden="true">{{ initials }}</span>
+        <span class="app-profile-text">
+          <span class="app-profile-name"><span class="sr-only">Signed in as </span>{{ profile.fullName }}</span>
+          <span class="app-profile-role">{{ profile.role }}</span>
+        </span>
+      </div>
+    }
+  </ejs-appbar>
+
+  <main class="app-main">
+    @if (store.load.ok) {
+      @if (loadingPage(); as name) { <app-loading [label]="'Loading ' + name + '…'" /> }
+      <router-outlet />
+    } @else {
+      <app-error-state title="We couldn't load your documents." message="The document list is not in the expected format.">
+        <button ejs-button cssClass="e-primary" (click)="reload()">Reload</button>
+      </app-error-state>
+    }
+  </main>
+
+  <ejs-dialog [visible]="resetOpen()" [isModal]="true" header="Reset demo?" [showCloseIcon]="true" [closeOnEscape]="true"
+    width="min(420px, calc(100vw - 32px))" [target]="body" [buttons]="resetButtons" (close)="resetOpen.set(false)" cssClass="app-dialog">
+    <ng-template #content>
+      <p>Signed documents in this tab are discarded, and every document returns to its original state.</p>
+    </ng-template>
+  </ejs-dialog>
+</div>
+
+<!-- The Toast relocates its own element, so it sits in a wrapper of its own. -->
+<div class="toast-host">
+  <ejs-toast #toast [position]="toastPosition" [showCloseButton]="true" [newestOnTop]="true" [animation]="toastAnimation"></ejs-toast>
+</div>
+<div class="sr-only" role="status" aria-live="polite">{{ notifier.live() }}</div>

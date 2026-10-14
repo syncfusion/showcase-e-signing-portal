@@ -1,0 +1,119 @@
+@switch (openedAs()) {
+  @case ('missing') {
+    <div class="page">
+      <app-error-state title="Document not found." message="It may have been removed from your list.">
+        <a routerLink="/documents" class="text-link">Back to My Documents</a>
+      </app-error-state>
+    </div>
+  }
+
+  @case ('review') {
+    @if (doc(); as d) {
+      @if (review(); as r) {
+        <div class="sign-page" data-mode="review">
+          <header class="sign-subheader">
+            <a routerLink="/documents" class="sign-back" aria-label="Back to My Documents" title="Back to My Documents"><svg lucideArrowLeft [size]="18"></svg></a>
+            <div class="sign-titleblock">
+              <h1 tabindex="-1">{{ d.title }}</h1>
+              <p class="sign-status" data-testid="sign-status"><svg lucideCircleCheck [size]="15"></svg>Signed{{ r.signed }} · read-only</p>
+            </div>
+            <div class="sign-actions">
+              <button ejs-button cssClass="e-primary" (click)="download(r.url, r.fileName)"><svg lucideDownload [size]="16"></svg>Download</button>
+            </div>
+          </header>
+          <div class="sign-body">
+            <div class="viewer-wrap"><app-document-viewer [url]="r.url" /></div>
+          </div>
+        </div>
+      }
+    }
+  }
+
+  @case ('sign') {
+    @if (doc(); as d) {
+      <div class="sign-page" data-mode="sign">
+        <header class="sign-subheader">
+          <a routerLink="/documents" class="sign-back" aria-label="Back to My Documents" title="Back to My Documents"><svg lucideArrowLeft [size]="18"></svg></a>
+          <div class="sign-titleblock">
+            <h1 tabindex="-1">{{ d.title }}</h1>
+            <!-- The visible line is a label, always on screen. Changes are announced from a separate live region. -->
+            <span class="sr-only" role="status" aria-live="polite">{{ remaining() === 0 ? 'All signatures complete' : 'Signatures required, ' + remaining() + ' remaining' }}</span>
+            <p class="sign-status" [class.done]="remaining() === 0" data-testid="sign-status">
+              @if (remaining() === 0) { <svg lucideCircleCheck [size]="15"></svg>All signatures complete }
+              @else { <svg lucidePenLine [size]="15"></svg>Signatures Required · {{ remaining() }} remaining }
+            </p>
+          </div>
+          <div class="sign-actions">
+            <button ejs-button cssClass="e-outline fields-button" [disabled]="!ready() || finishing()" (click)="fieldsOpen.set(true)"
+              [attr.aria-label]="'Fields to complete, ' + openFields() + ' left'"><svg lucideListChecks [size]="16"></svg>Fields ({{ openFields() }} left)</button>
+            <button ejs-button cssClass="e-primary" [disabled]="!ready() || finishing()" (click)="onFinish()">{{ finishing() ? 'Finishing…' : 'Finish Signing' }}</button>
+          </div>
+        </header>
+
+        <div class="sign-body">
+          <div class="viewer-wrap" #wrap>
+            <!-- The Next button over the document (the requirement's overlay): it scrolls to the next field that needs
+                 input; once no required field is left it finishes instead. Before the viewer in the tab order. -->
+            @if (ready() && !finishing()) {
+              @if (remaining() === 0) {
+                <button type="button" class="next-flag finish" (click)="onFinish()" data-testid="next-flag"><svg lucideCheck [size]="16"></svg><span class="next-flag-text">Finish</span></button>
+              } @else {
+                <button type="button" class="next-flag" (click)="onNext()" data-testid="next-flag"><svg lucideArrowRight [size]="16"></svg><span class="next-flag-text">Next</span></button>
+              }
+            }
+            <app-document-viewer [url]="docUrl()" [fields]="d.fields" [typedName]="profile?.fullName" (ready)="onReady()" (valuesChanged)="refresh()" />
+          </div>
+          <aside class="e-card field-panel" aria-labelledby="fields-heading">
+            <div class="e-card-header"><div class="e-card-header-caption"><h2 class="e-card-header-title" id="fields-heading">Fields to complete</h2></div></div>
+            <div class="e-card-content">
+              @if (!narrow()) { <ng-container *ngTemplateOutlet="fieldList" /> }
+              <ng-container *ngTemplateOutlet="fieldHint" />
+            </div>
+          </aside>
+        </div>
+
+        <!-- Below 1024px the side panel is hidden; the same list opens from the header's Fields button. -->
+        @if (narrow()) {
+          <ejs-dialog [visible]="fieldsOpen()" [isModal]="true" header="Fields to complete" [showCloseIcon]="true" [closeOnEscape]="true"
+            width="min(420px, calc(100vw - 32px))" [target]="body" (close)="fieldsOpen.set(false)" cssClass="app-dialog fields-dialog">
+            <ng-template #content>
+              <div class="fields-dialog-body"><ng-container *ngTemplateOutlet="fieldList" /><ng-container *ngTemplateOutlet="fieldHint" /></div>
+            </ng-template>
+          </ejs-dialog>
+        }
+
+        <ejs-dialog [visible]="confirmOpen()" [isModal]="true" header="Finish signing?" [showCloseIcon]="true" [closeOnEscape]="true"
+          width="min(420px, calc(100vw - 32px))" [target]="body" [buttons]="confirmButtons" (close)="confirmOpen.set(false)" cssClass="app-dialog">
+          <ng-template #content>
+            <p>The document becomes read-only. You can review and download the signed copy afterwards.</p>
+          </ng-template>
+        </ejs-dialog>
+      </div>
+    }
+  }
+}
+
+<ng-template #fieldList>
+  <ul class="field-list">
+    @for (row of rows(); track row.field.name) {
+      <li class="field-item">
+        <button type="button" class="field-row" [class.filled]="row.filled" [disabled]="!ready()" (click)="focusField(row.field.name)"
+          [attr.data-field]="row.field.name" [attr.data-filled]="row.filled">
+          <span class="field-mark" aria-hidden="true">@if (row.filled) { <svg lucideCheck [size]="12"></svg> }</span>
+          <span class="field-text">
+            <span class="field-label">{{ row.field.label }}</span>
+            <span class="field-state">{{ row.state }}</span>
+          </span>
+        </button>
+        @if (row.filled && row.field.type === 'signature') {
+          <button type="button" class="field-clear" [disabled]="finishing()" (click)="clearField(row.field.name)"
+            [attr.aria-label]="'Clear ' + row.field.label" [attr.data-clear]="row.field.name">Clear</button>
+        }
+      </li>
+    }
+  </ul>
+</ng-template>
+
+<ng-template #fieldHint>
+  <div class="field-hint">Scroll through the document, or press Next to go to each field. Select a signature field to sign: you can draw, type or upload your signature. Clear removes a signature so you can sign again.</div>
+</ng-template>
