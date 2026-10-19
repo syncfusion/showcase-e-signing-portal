@@ -1,0 +1,40 @@
+@* One Toast for the whole app, rendered by the shell (reference useNotifier.tsx); every message is mirrored to a
+   polite live region. *@
+@inject IJSRuntime JS
+@inject Notifications Notifications
+@implements IDisposable
+<div class="toast-host">
+    <SfToast @ref="toast" ShowCloseButton="true" NewestOnTop="true">
+        <ToastPosition X="Right" Y="Top" />
+        @if (reduced)
+        {
+            <ToastAnimationSettings>
+                <ToastShowAnimationSettings Effect="ToastEffect.FadeIn" Duration="0" />
+                <ToastHideAnimationSettings Effect="ToastEffect.FadeOut" Duration="0" />
+            </ToastAnimationSettings>
+        }
+    </SfToast>
+</div>
+<div class="sr-only" role="status" aria-live="polite">@live</div>
+
+@code {
+    private SfToast? toast;
+    private string live = "";
+    private bool reduced;
+
+    protected override void OnInitialized()
+    {
+        reduced = ((IJSInProcessRuntime)JS).Invoke<bool>("esignApp.matches", "(prefers-reduced-motion: reduce)");
+        Notifications.Show = NotifyAsync;
+    }
+
+    /// <summary>Kind is success, warning, danger or info.</summary>
+    public async Task NotifyAsync(string title, string content, string kind)
+    {
+        live = $"{title}. {content}";
+        StateHasChanged();
+        if (toast is null) return;
+        await toast.ShowAsync(new ToastModel { Title = title, Content = content, CssClass = $"e-toast-{kind}", Timeout = kind is "danger" or "warning" ? 6000 : 4000 });
+    }
+    public void Dispose() { if (Notifications.Show == NotifyAsync) Notifications.Show = null; }
+}

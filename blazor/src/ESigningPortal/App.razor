@@ -1,0 +1,14 @@
+@* Routes (reference ui/App.tsx): My Documents, Sign Document and Signing Complete inside the shell, the standalone
+   /healthz page outside it; "/" and unknown paths go to My Documents. *@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        @* Focus moves to the page heading after each route change. *@
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <RedirectTo Path="documents" />
+        </LayoutView>
+    </NotFound>
+</Router>

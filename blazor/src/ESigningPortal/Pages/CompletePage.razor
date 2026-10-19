@@ -1,0 +1,57 @@
+@* Signing Complete (reference ui/pages/Complete/CompletePage.tsx). This screen follows a signing in this session;
+   anything else goes back to the list. *@
+@page "/complete/{DocumentId}"
+@inject SigningStore Store
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@if (doc is not null && entry is not null)
+{
+    <div class="page complete-page">
+        <section class="e-card complete-panel" aria-labelledby="complete-title">
+            <div class="e-card-header">
+                <span class="complete-icon" aria-hidden="true"><Icon Name="CircleCheck" Size="28" /></span>
+                <div class="e-card-header-caption">
+                    <h1 class="e-card-header-title" id="complete-title">Thank you, @Store.Catalogue!.Profile.FirstName</h1>
+                    <div class="e-card-sub-title">Signing complete! You may now view or download your signed document.</div>
+                </div>
+            </div>
+            <div class="e-card-content">
+                <dl class="complete-facts">
+                    <div><dt>Document</dt><dd>@doc.Title</dd></div>
+                    <div><dt>Signed</dt><dd>@signedText</dd></div>
+                    <div><dt>Signed by</dt><dd>@Store.Catalogue!.Profile.FullName</dd></div>
+                </dl>
+                <div class="complete-note">We have everything we need at this stage. The signed copy is read-only.</div>
+            </div>
+            <div class="e-card-actions">
+                <div class="complete-actions">
+                    <SfButton CssClass="e-outline" OnClick="@(() => Nav.NavigateTo($"sign/{doc.Id}"))"><Icon Name="Eye" Size="16" />Review Documents</SfButton>
+                    <SfButton CssClass="e-primary" OnClick="@(() => Downloads.SaveAsync(JS, entry.SignedPdf, entry.FileName))"><Icon Name="Download" Size="16" />Download Documents</SfButton>
+                    <SfButton CssClass="e-flat" OnClick="@(() => Nav.NavigateTo("documents"))">Back to My Documents</SfButton>
+                </div>
+            </div>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public string DocumentId { get; set; } = "";
+
+    private SigningDocument? doc;
+    private SessionEntry? entry;
+    private string signedText = "";
+
+    protected override void OnParametersSet()
+    {
+        doc = Store.Catalogue?.Documents.FirstOrDefault(d => d.Id == DocumentId);
+        entry = doc is not null && Store.Session.TryGetValue(doc.Id, out var e) ? e : null;
+        if (doc is null || entry is null) { Nav.NavigateTo("documents", replace: true); return; }
+        signedText = ((IJSInProcessRuntime)JS).Invoke<string>("esignApp.formatDateTime", entry.SignedAt.ToString("O"));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && entry is not null) await JS.InvokeVoidAsync("esignApp.setTitle", "Signing Complete · E-Signing Portal");
+    }
+}

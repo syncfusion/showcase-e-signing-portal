@@ -1,0 +1,14 @@
+@* Status tone plus an icon and a label, so the meaning never rests on colour alone. *@
+@{
+    var (label, tone, icon, key) = Badge switch
+    {
+        Domain.Badge.DueSoon => ("Due soon", "warning", "Clock", "due-soon"),
+        Domain.Badge.Completed => ("Completed", "success", "CheckCircle2", "completed"),
+        _ => ("Ready to sign", "info", "PenLine", "ready"),
+    };
+}
+<span class="status-badge tone-@tone" data-badge="@key"><Icon Name="@icon" Size="13" />@label</span>
+
+@code {
+    [Parameter, EditorRequired] public Domain.Badge Badge { get; set; }
+}

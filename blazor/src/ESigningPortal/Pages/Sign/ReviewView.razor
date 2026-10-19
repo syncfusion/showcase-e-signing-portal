@@ -1,0 +1,47 @@
+@* A completed document, read-only: this session's signed copy, or the baseline file for a document signed earlier. *@
+@inject SigningStore Store
+@inject IJSRuntime JS
+
+<div class="sign-page" data-mode="review">
+    <header class="sign-subheader">
+        <a href="documents" class="sign-back" aria-label="Back to My Documents" title="Back to My Documents"><Icon Name="ArrowLeft" Size="18" /></a>
+        <div class="sign-titleblock">
+            <h1>@Doc.Title</h1>
+            <p class="sign-status" data-testid="sign-status">
+                <Icon Name="CircleCheck" Size="15" />Signed@(signed is { } s ? $" on {Format.Date(s)}" : "") · read-only
+            </p>
+        </div>
+        <div class="sign-actions">
+            <SfButton CssClass="e-primary" OnClick="Download"><Icon Name="Download" Size="16" />Download</SfButton>
+        </div>
+    </header>
+    <div class="sign-body">
+        <div class="viewer-wrap">
+            <DocumentViewer Url="@(entry is null ? Doc.File : null)" Bytes="@entry?.SignedPdf" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SigningDocument Doc { get; set; } = default!;
+
+    private SessionEntry? entry;
+    private DateTime? signed;
+
+    protected override void OnInitialized()
+    {
+        entry = Store.Session.TryGetValue(Doc.Id, out var e) ? e : null;
+        signed = Rules.SignedAt(Doc, Store.Session, Store.Today);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("esignApp.setTitle", $"{Doc.Title} (signed) · E-Signing Portal");
+    }
+
+    private async Task Download()
+    {
+        if (entry is not null) await Downloads.SaveAsync(JS, entry.SignedPdf, entry.FileName);
+        else await JS.InvokeVoidAsync("esignApp.downloadUrl", Doc.File, Rules.SignedFileName(Doc.Title));
+    }
+}

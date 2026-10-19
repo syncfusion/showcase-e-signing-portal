@@ -1,0 +1,255 @@
+@* A document ready to sign (reference SignPage.tsx, SigningView): the viewer with its fields, the Next flag over the
+   document, the list of fields (side panel on wide screens, a dialog below 1024px) and Finish Signing. *@
+@inject SigningStore Store
+@inject PdfFinalizer Finalizer
+@inject Notifications Notifications
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="sign-page" data-mode="sign">
+    <header class="sign-subheader">
+        <a href="documents" class="sign-back" aria-label="Back to My Documents" title="Back to My Documents"><Icon Name="ArrowLeft" Size="18" /></a>
+        <div class="sign-titleblock">
+            <h1>@Doc.Title</h1>
+            @* The visible line is a label, always on screen. Changes are announced from a separate live region, so the page
+               never presents a permanent "status". *@
+            <span class="sr-only" role="status" aria-live="polite">@(remaining == 0 ? "All signatures complete" : $"Signatures required, {remaining} remaining")</span>
+            <p class="sign-status@(remaining == 0 ? " done" : "")" data-testid="sign-status">
+                @if (remaining == 0)
+                {
+                    <Icon Name="CircleCheck" Size="15" />@("All signatures complete")
+                }
+                else
+                {
+                    <Icon Name="PenLine" Size="15" />@($"Signatures Required · {remaining} remaining")
+                }
+            </p>
+        </div>
+        <div class="sign-actions">
+            <SfButton CssClass="e-outline fields-button" Disabled="@(!ready || finishing)" OnClick="@(() => fieldsOpen = true)"
+                      HtmlAttributes="@(new Dictionary<string, object> { ["aria-label"] = $"Fields to complete, {openFields} left" })">
+                <Icon Name="ListChecks" Size="16" />Fields (@openFields left)
+            </SfButton>
+            <SfButton CssClass="e-primary" Disabled="@(!ready || finishing)" OnClick="OnFinish">@(finishing ? "Finishing…" : "Finish Signing")</SfButton>
+        </div>
+    </header>
+
+    <div class="sign-body">
+        <div class="viewer-wrap" id="sign-viewer-wrap">
+            @* The Next button over the document. It scrolls to the next field that needs input; once no required field is
+               left it finishes instead. Before the viewer in the tab order. *@
+            @if (ready && !finishing)
+            {
+                @if (remaining == 0)
+                {
+                    <button type="button" class="next-flag finish" @onclick="OnFinish" data-testid="next-flag"><Icon Name="Check" Size="16" /><span class="next-flag-text">Finish</span></button>
+                }
+                else
+                {
+                    <button type="button" class="next-flag" @onclick="OnNext" data-testid="next-flag"><Icon Name="ArrowRight" Size="16" /><span class="next-flag-text">Next</span></button>
+                }
+            }
+            <DocumentViewer @ref="viewer" Url="@Doc.File" Fields="Doc.Fields" TypedName="@Profile.FullName" OnReady="OnViewerReady" OnValuesChanged="RefreshAsync" />
+        </div>
+        <aside class="e-card field-panel" aria-labelledby="fields-heading">
+            <div class="e-card-header"><div class="e-card-header-caption"><h2 class="e-card-header-title" id="fields-heading">Fields to complete</h2></div></div>
+            <div class="e-card-content">
+                @if (!narrow)
+                {
+                    @FieldList
+                }
+                @FieldHint
+            </div>
+        </aside>
+    </div>
+
+    @* Below 1024px the side panel is hidden; the same list opens from the header's Fields button. *@
+    @if (narrow)
+    {
+        <SfDialog @bind-Visible="fieldsOpen" IsModal="true" ShowCloseIcon="true" CloseOnEscape="true" Width="min(420px, calc(100vw - 32px))"
+                  Target="body" CssClass="app-dialog fields-dialog">
+            <DialogTemplates>
+                <Header>Fields to complete</Header>
+                <Content><div class="fields-dialog-body">@FieldList @FieldHint</div></Content>
+            </DialogTemplates>
+        </SfDialog>
+    }
+
+    <SfDialog @bind-Visible="confirmOpen" IsModal="true" ShowCloseIcon="true" CloseOnEscape="true" Width="min(420px, calc(100vw - 32px))"
+              Target="body" CssClass="app-dialog">
+        <DialogTemplates>
+            <Header>Finish signing?</Header>
+            <Content><p>The document becomes read-only. You can review and download the signed copy afterwards.</p></Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Cancel" OnClick="@(() => confirmOpen = false)" />
+            <DialogButton Content="Finish signing" IsPrimary="true" OnClick="ConfirmFinishAsync" />
+        </DialogButtons>
+    </SfDialog>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SigningDocument Doc { get; set; } = default!;
+    [Parameter, EditorRequired] public Profile Profile { get; set; } = default!;
+
+    private DocumentViewer? viewer;
+    private IReadOnlyList<FieldDefinition> fields = [];
+    private Dictionary<string, string> values = [];
+    private bool ready, confirmOpen, finishing, fieldsOpen, narrow;
+    private string? lastFocused;
+    private int remaining, openFields;
+    private DotNetObjectReference<SigningView>? self;
+    private int mediaWatch, flagWatch;
+    private Timer? poll;
+
+    protected override void OnInitialized()
+    {
+        fields = Rules.InReadingOrder(Doc.Fields);
+        Recount();
+        self = DotNetObjectReference.Create(this);
+        var watch = ((IJSInProcessRuntime)JS).Invoke<MediaWatch>("esignApp.watchMedia", "(max-width: 1023.98px)", self, nameof(OnNarrowChanged));
+        mediaWatch = watch.Id;
+        narrow = watch.Matches;
+        // The viewer's field events do not fire for every change, so the field values are also read on a short interval
+        // while the page is open (as the reference).
+        poll = new Timer(_ => InvokeAsync(RefreshAsync), null, 500, 500);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("esignApp.setTitle", $"Sign {Doc.Title} · E-Signing Portal");
+    }
+
+    [JSInvokable]
+    public void OnNarrowChanged(bool matches)
+    {
+        narrow = matches;
+        if (!matches) fieldsOpen = false;
+        StateHasChanged();
+    }
+
+    private async Task OnViewerReady()
+    {
+        ready = true;
+        // The Next button sits just outside the PDF page's left edge; the viewer reports neither page moves nor zoom.
+        flagWatch = await JS.InvokeAsync<int>("esignViewer.placeNextFlag", "#sign-viewer-wrap");
+    }
+
+    private void Recount()
+    {
+        remaining = Rules.RemainingRequired(fields, values);
+        openFields = fields.Count(f => !Rules.HasValue(values, f.Name));
+    }
+
+    private async Task RefreshAsync()
+    {
+        if (viewer is null || !ready || finishing) return;
+        var next = await viewer.ReadValuesAsync();
+        if (fields.All(f => (values.GetValueOrDefault(f.Name) ?? "") == (next.GetValueOrDefault(f.Name) ?? ""))) return;
+        values = next;
+        Recount();
+        StateHasChanged();
+    }
+
+    private async Task FocusFieldAsync(FieldDefinition field)
+    {
+        lastFocused = field.Name;
+        fieldsOpen = false;
+        if (viewer is not null) await viewer.FocusFieldAsync(field);
+    }
+
+    private async Task ClearFieldAsync(string name)
+    {
+        if (viewer is null) return;
+        await viewer.ClearFieldAsync(name);
+        await Task.Delay(150);
+        await RefreshAsync();
+    }
+
+    // Next visits every field that still needs input, optional ones included, in reading order.
+    private async Task OnNext()
+    {
+        var current = viewer is null ? values : await viewer.ReadValuesAsync();
+        if (Rules.NextOpenField(fields, current, lastFocused) is { } next) await FocusFieldAsync(next);
+    }
+
+    private async Task OnFinish()
+    {
+        var current = viewer is null ? values : await viewer.ReadValuesAsync();
+        values = current;
+        Recount();
+        if (!Rules.CanFinish(fields, current))
+        {
+            await Notifications.NotifyAsync(Rules.StillRequiredMessage(Rules.RemainingRequired(fields, current)), "Sign the highlighted field to continue.", "warning");
+            if (Rules.NextUnsignedField(fields, current) is { } first) await FocusFieldAsync(first);
+            return;
+        }
+        confirmOpen = true;
+    }
+
+    private async Task ConfirmFinishAsync()
+    {
+        confirmOpen = false;
+        finishing = true;
+        StateHasChanged();
+        try
+        {
+            var saved = await viewer!.SaveAsync();
+            var result = await Finalizer.FinalizeAsync(saved);
+            Store.CompleteDocument(Doc, result.Pdf);
+            Nav.NavigateTo($"complete/{Doc.Id}");
+            if (!result.Watermarked) await Notifications.NotifyAsync("Signed without a watermark", "The watermark image could not be loaded. Your signed document is complete.", "warning");
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"Signing could not be completed: {e}");
+            finishing = false;
+            await Notifications.NotifyAsync("We couldn't finish signing", "Your signature is still on the document. Try Finish Signing again.", "danger");
+        }
+    }
+
+    // One list, shown in the side panel on wide screens and in a dialog below 1024px.
+    private RenderFragment FieldList => __builder =>
+    {
+        <ul class="field-list">
+            @foreach (var f in fields)
+            {
+                var filled = Rules.HasValue(values, f.Name);
+                var state = f.Type == FieldType.Signature
+                    ? (filled ? $"Signed by {Profile.FullName}" : $"{(f.Required ? "Required" : "Optional")} · page {f.Page}")
+                    : (filled ? "Filled in" : $"{(f.Required ? "Required" : "Optional")} · page {f.Page}");
+                <li class="field-item" @key="f.Name">
+                    <button type="button" class="field-row@(filled ? " filled" : "")" disabled="@(!ready)" @onclick="@(() => FocusFieldAsync(f))" data-field="@f.Name" data-filled="@(filled ? "true" : "false")">
+                        <span class="field-mark" aria-hidden="true">@if (filled) { <Icon Name="Check" Size="12" /> }</span>
+                        <span class="field-text">
+                            <span class="field-label">@f.Label</span>
+                            <span class="field-state">@state</span>
+                        </span>
+                    </button>
+                    @if (filled && f.Type == FieldType.Signature)
+                    {
+                        <button type="button" class="field-clear" disabled="@finishing" @onclick="@(() => ClearFieldAsync(f.Name))" aria-label="Clear @f.Label" data-clear="@f.Name">Clear</button>
+                    }
+                </li>
+            }
+        </ul>
+    };
+
+    private static readonly RenderFragment FieldHint = __builder =>
+    {
+        <div class="field-hint">Scroll through the document, or press Next to go to each field. Select a signature field to sign: you can draw, type or upload your signature. Clear removes a signature so you can sign again.</div>
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        poll?.Dispose();
+        try
+        {
+            if (mediaWatch != 0) await JS.InvokeVoidAsync("esignApp.unwatch", mediaWatch);
+            if (flagWatch != 0) await JS.InvokeVoidAsync("esignApp.unwatch", flagWatch);
+        }
+        catch (JSDisconnectedException) { }
+        self?.Dispose();
+    }
+}

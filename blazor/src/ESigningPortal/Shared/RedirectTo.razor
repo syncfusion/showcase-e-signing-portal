@@ -1,0 +1,8 @@
+@* Replaces the current history entry, as the reference's <Navigate replace />. *@
+@inject NavigationManager Nav
+
+@code {
+    [Parameter, EditorRequired] public string Path { get; set; } = "";
+
+    protected override void OnInitialized() => Nav.NavigateTo(Path, replace: true);
+}

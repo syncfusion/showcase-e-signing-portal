@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ESigningPortal/ESigningPortal.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ESigningPortal.Tests/ESigningPortal.Tests.csproj" />
+  </Folder>
+</Solution>

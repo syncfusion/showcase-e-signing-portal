@@ -1,0 +1,31 @@
+@* Sign Document (reference ui/pages/Sign/SignPage.tsx). A completed document opens the same route read-only: the
+   signed copy, no fields (app-plan.md). *@
+@page "/sign/{DocumentId}"
+@inject SigningStore Store
+
+@if (Store.Catalogue is not null)
+{
+    @if (doc is null)
+    {
+        <div class="page">
+            <ErrorState Title="Document not found." Message="It may have been removed from your list.">
+                <a href="documents" class="text-link">Back to My Documents</a>
+            </ErrorState>
+        </div>
+    }
+    else if (Rules.StatusOf(doc, Store.Session) == DocumentStatus.Completed)
+    {
+        <ReviewView @key="@($"review-{doc.Id}")" Doc="doc" />
+    }
+    else
+    {
+        <SigningView @key="@($"sign-{doc.Id}")" Doc="doc" Profile="Store.Catalogue.Profile" />
+    }
+}
+
+@code {
+    [Parameter] public string DocumentId { get; set; } = "";
+    private SigningDocument? doc;
+
+    protected override void OnParametersSet() => doc = Store.Catalogue?.Documents.FirstOrDefault(d => d.Id == DocumentId);
+}

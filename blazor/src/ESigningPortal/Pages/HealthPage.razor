@@ -1,0 +1,39 @@
+@* Page-level health view (factory/standards/health-check.md), outside the shell (reference HealthPage.tsx). This app
+   has no backend, so there is no API section: the page loading at all shows the static files are being served,
+   and the catalogue line shows the JSON source validated. *@
+@page "/healthz"
+@layout BareLayout
+@using System.Reflection
+@inject SigningStore Store
+@inject IJSRuntime JS
+
+<main class="healthz" aria-labelledby="healthz-title">
+    <h1 id="healthz-title">Health</h1>
+    <dl>
+        <dt>Status</dt><dd data-testid="health-status" class="@(Store.Load.Ok ? "tone-success" : "tone-danger")">@(Store.Load.Ok ? "ok" : "degraded")</dd>
+        <dt>App</dt><dd data-testid="health-app">e-signing-portal</dd>
+        <dt>Version</dt><dd data-testid="health-version">@Version</dd>
+        <dt>Built</dt><dd>@BuildTime</dd>
+        <dt>Page loaded</dt><dd>@PageLoaded</dd>
+        <dt>Base path</dt><dd>/</dd>
+        <dt>Data source</dt><dd>json (no backend)</dd>
+        <dt>Fixture version</dt><dd>@(Store.Catalogue?.FixtureVersion.ToString() ?? "not loaded")</dd>
+        <dt>Documents</dt><dd>@(Store.Catalogue?.Documents.Count ?? 0)</dd>
+        @if (!Store.Load.Ok)
+        {
+            <dt>Catalogue errors</dt><dd>@string.Join(" ", Store.Load.Errors)</dd>
+        }
+    </dl>
+</main>
+
+@code {
+    private static readonly Assembly App = typeof(HealthPage).Assembly;
+    private static readonly string PageLoaded = DateTimeOffset.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+    private static string Version => App.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "unknown";
+    private static string BuildTime => App.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == "BuildTime")?.Value ?? "unknown";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("esignApp.setTitle", "Health · E-Signing Portal");
+    }
+}

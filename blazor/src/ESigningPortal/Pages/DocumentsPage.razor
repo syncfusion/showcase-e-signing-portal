@@ -1,0 +1,118 @@
+@* My Documents (reference ui/pages/Documents/DocumentsPage.tsx): ready to sign first, then completed, each document
+   as Syncfusion Card markup with its one action row. *@
+@page "/documents"
+@inject SigningStore Store
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
+
+@if (Store.Catalogue is not null)
+{
+    var (ready, completed) = Rules.GroupByStatus(Store.Catalogue.Documents, Store.Session, Store.Today);
+    <div class="page documents-page">
+        <header class="page-header">
+            <div>
+                <h1>My Documents</h1>
+                <p data-testid="documents-summary">
+                    @(ready.Count == 0 ? "Nothing is waiting for your signature." : $"{ready.Count} {(ready.Count == 1 ? "document needs" : "documents need")} your signature.")
+                </p>
+            </div>
+            <p class="page-note">Sample portal: signing stays in this tab and nothing is sent.</p>
+        </header>
+
+        <section aria-labelledby="ready-heading" data-testid="ready-section">
+            <h2 id="ready-heading">Ready to sign <span class="count">@ready.Count</span></h2>
+            @if (ready.Count > 0)
+            {
+                <ul class="doc-grid">@foreach (var doc in ready) { @Card(doc) }</ul>
+            }
+            else
+            {
+                <EmptyState Message="You're all caught up." />
+            }
+        </section>
+
+        <section aria-labelledby="completed-heading" data-testid="completed-section">
+            <h2 id="completed-heading">Completed <span class="count">@completed.Count</span></h2>
+            @if (completed.Count > 0)
+            {
+                <ul class="doc-grid">@foreach (var doc in completed) { @Card(doc) }</ul>
+            }
+            else
+            {
+                <EmptyState Message="Signed documents appear here." />
+            }
+        </section>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Store.Changed += OnChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("esignApp.setTitle", "My Documents · E-Signing Portal");
+    }
+
+    private RenderFragment Card(SigningDocument doc) => __builder =>
+    {
+        var dates = Rules.ResolveDates(doc, Store.Today);
+        var signed = Rules.SignedAt(doc, Store.Session, Store.Today);
+        var badge = Rules.BadgeOf(doc, Store.Session);
+        var done = signed is not null && badge == Badge.Completed;
+        <li @key="doc.Id">
+            @* Syncfusion Card markup (CSS only). The surface itself is not clickable; the action row holds the one action. *@
+            <article class="e-card doc-item" data-document="@doc.Id" aria-labelledby="doc-@doc.Id">
+                <div class="e-card-header">
+                    <span class="doc-icon" aria-hidden="true"><Icon Name="FileText" Size="20" /></span>
+                    <div class="e-card-header-caption">
+                        <div class="e-card-header-title" id="doc-@doc.Id">@doc.Title</div>
+                        <div class="e-card-sub-title">From @doc.Sender.Name, @doc.Sender.Organisation</div>
+                    </div>
+                </div>
+                <div class="e-card-content">
+                    <div class="doc-meta">
+                        <StatusBadge Badge="badge" />
+                        <dl>
+                            <div><dt>Received</dt><dd>@Format.Date(dates.Received)</dd></div>
+                            @if (done)
+                            {
+                                <div><dt>Signed</dt><dd>@Format.Date(signed!.Value)</dd></div>
+                            }
+                            else if (dates.Due is { } due)
+                            {
+                                <div><dt>Due</dt><dd>@Format.Date(due)</dd></div>
+                            }
+                            <div><dt>Length</dt><dd>@Format.Pages(doc.PageCount)</dd></div>
+                        </dl>
+                    </div>
+                </div>
+                <div class="e-card-actions">
+                    <div class="doc-actions">
+                        @if (done)
+                        {
+                            <SfButton CssClass="e-outline" OnClick="@(() => Nav.NavigateTo($"sign/{doc.Id}"))" HtmlAttributes="@Label($"Review {doc.Title}")"><Icon Name="Eye" Size="16" />Review</SfButton>
+                            <SfButton CssClass="e-outline" OnClick="@(() => Download(doc))" HtmlAttributes="@Label($"Download {doc.Title}")"><Icon Name="Download" Size="16" />Download</SfButton>
+                        }
+                        else
+                        {
+                            <SfButton CssClass="e-primary" OnClick="@(() => Nav.NavigateTo($"sign/{doc.Id}"))" HtmlAttributes="@Label($"Review and sign {doc.Title}")"><Icon Name="PenLine" Size="16" />Review and sign</SfButton>
+                        }
+                    </div>
+                </div>
+            </article>
+        </li>
+    };
+
+    private static Dictionary<string, object> Label(string label) => new() { ["aria-label"] = label };
+
+    private async Task Download(SigningDocument doc)
+    {
+        if (Store.Session.TryGetValue(doc.Id, out var entry)) await Downloads.SaveAsync(JS, entry.SignedPdf, entry.FileName);
+        else await JS.InvokeVoidAsync("esignApp.downloadUrl", doc.File, Rules.SignedFileName(doc.Title));
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Store.Changed -= OnChanged;
+}

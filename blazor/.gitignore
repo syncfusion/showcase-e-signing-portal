@@ -1,0 +1,33 @@
+# .NET build output
+bin/
+obj/
+publish/
+[Dd]ebug/
+[Rr]elease/
+*.nupkg
+
+# Test results
+TestResults/
+*.trx
+coverage*.xml
+
+# Visual Studio, Rider and VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.DotSettings.user
+
+# Your Syncfusion license key. Copy
+# src/ESigningPortal/wwwroot/appsettings.Development.example.json to
+# appsettings.Development.json and put your key there; never commit it.
+src/ESigningPortal/wwwroot/appsettings.Development.json
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

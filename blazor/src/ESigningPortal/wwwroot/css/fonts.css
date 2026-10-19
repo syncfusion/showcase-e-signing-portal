@@ -1,0 +1,7 @@
+/* Open-licence (SIL OFL 1.1, fonts/*-LICENSE.txt) handwriting fonts for the signature dialog's Type tab, as in the
+   reference (@fontsource 5.3.0, latin 400). They are TrueType here because the PDF Viewer also embeds them in the
+   signed copy (DocumentViewer.razor, FallbackFontCollection), which takes TrueType only. */
+@font-face { font-family: 'Dancing Script'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/dancing-script-latin-400-normal.ttf') format('truetype'); }
+@font-face { font-family: 'Sacramento'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/sacramento-latin-400-normal.ttf') format('truetype'); }
+@font-face { font-family: 'Pacifico'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/pacifico-latin-400-normal.ttf') format('truetype'); }
+@font-face { font-family: 'Caveat'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/caveat-latin-400-normal.ttf') format('truetype'); }

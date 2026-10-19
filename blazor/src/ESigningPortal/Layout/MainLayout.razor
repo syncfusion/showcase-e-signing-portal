@@ -1,0 +1,102 @@
+@* The shell (reference ui/shell/Shell.tsx): a Syncfusion AppBar with the brand, My Documents, Reset demo, the theme
+   switch and the signed-in profile, above a scroll-contained main area. *@
+@inherits LayoutComponentBase
+@inject SigningStore Store
+@inject ThemeService Theme
+@inject NavigationManager Nav
+@inject Notifications Notifications
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="app-frame">
+    <SfAppBar ColorMode="AppBarColor.Inherit" CssClass="app-topbar">
+        <a href="documents" class="app-brand" aria-label="E-Signing Portal, My Documents">
+            <span class="app-brand-mark" aria-hidden="true"><Icon Name="FilePenLine" Size="18" /></span>
+            <span class="app-brand-name">E-Signing Portal</span>
+        </a>
+        <NavLink href="documents" class="app-toplink" title="My Documents">
+            <Icon Name="Files" Size="16" /><span class="btn-text">My Documents</span>
+        </NavLink>
+        <div class="e-appbar-spacer"></div>
+        <SfButton CssClass="e-outline app-reset" Disabled="@(!Store.Load.Ok)" OnClick="@(() => resetOpen = true)"
+                  HtmlAttributes="@(new Dictionary<string, object> { ["title"] = "Return every document to its original state", ["aria-label"] = "Reset demo" })">
+            <Icon Name="RotateCcw" Size="16" /><span class="btn-text">Reset demo</span>
+        </SfButton>
+        <button type="button" class="app-icon-button" @onclick="Theme.ToggleAsync" title="@ThemeLabel" aria-label="@ThemeLabel">
+            <Icon Name="@(Theme.Theme == AppTheme.Dark ? "Sun" : "Moon")" Size="20" />
+        </button>
+        @if (Store.Catalogue?.Profile is { } profile)
+        {
+            <div class="app-profile" title="Signed in as @profile.FullName">
+                <span class="app-avatar" aria-hidden="true">@Format.Initials(profile.FullName)</span>
+                <span class="app-profile-text">
+                    <span class="app-profile-name"><span class="sr-only">Signed in as </span>@profile.FullName</span>
+                    <span class="app-profile-role">@profile.Role</span>
+                </span>
+            </div>
+        }
+    </SfAppBar>
+
+    <main class="app-main">
+        @if (Store.Load.Ok)
+        {
+            @Body
+        }
+        else
+        {
+            <ErrorState Title="We couldn't load your documents." Message="The document list is not in the expected format.">
+                <SfButton CssClass="e-primary" OnClick="@(() => Nav.NavigateTo(Nav.Uri, forceLoad: true))">Reload</SfButton>
+            </ErrorState>
+        }
+    </main>
+
+    <SfDialog @bind-Visible="resetOpen" IsModal="true" ShowCloseIcon="true" CloseOnEscape="true" Width="min(420px, calc(100vw - 32px))"
+              Target="body" CssClass="app-dialog">
+        <DialogTemplates>
+            <Header>Reset demo?</Header>
+            <Content><p>Signed documents in this tab are discarded, and every document returns to its original state.</p></Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Cancel" OnClick="@(() => resetOpen = false)" />
+            <DialogButton Content="Reset demo" IsPrimary="true" OnClick="ConfirmReset" />
+        </DialogButtons>
+    </SfDialog>
+
+    <Notifier />
+</div>
+
+@code {
+    private bool resetOpen;
+    private string ThemeLabel => Theme.Theme == AppTheme.Dark ? "Switch to light theme" : "Switch to dark theme";
+
+    protected override void OnInitialized()
+    {
+        Theme.Initialize();
+        Theme.Changed += OnChanged;
+        Store.Changed += OnChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        // Startup screen until the Syncfusion theme has loaded; the shell has rendered underneath meanwhile.
+        await JS.InvokeVoidAsync("esignApp.themeReady");
+        await JS.InvokeVoidAsync("esignApp.removeBoot");
+    }
+
+    private async Task ConfirmReset()
+    {
+        resetOpen = false;
+        Store.Reset();
+        Nav.NavigateTo("documents");
+        await Notifications.NotifyAsync("Demo reset", "Every document is back to its original state.", "info");
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Theme.Changed -= OnChanged;
+        Store.Changed -= OnChanged;
+    }
+}

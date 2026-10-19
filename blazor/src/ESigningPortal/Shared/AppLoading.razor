@@ -1,0 +1,13 @@
+@* The one loading indicator (design/DESIGN.md, "Interaction and accessibility"): a spinner ring and visible text in a
+   role="status" region. Its styles are in index.html. Screen fills the window, Overlay covers its positioned parent,
+   and the default sits in the page's content area. *@
+<div class="app-loading@(Variant == "page" ? "" : $" app-loading--{Variant}")" role="status" aria-live="polite">
+    <div class="app-loading__ring" aria-hidden="true"></div>
+    <div>@Label</div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    /// <summary>page, overlay or screen.</summary>
+    [Parameter] public string Variant { get; set; } = "page";
+}

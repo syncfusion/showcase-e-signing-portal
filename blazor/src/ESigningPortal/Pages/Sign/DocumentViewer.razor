@@ -1,0 +1,282 @@
+@* The PDF Viewer with its loading and failure states (reference ui/pages/Sign/DocumentViewer.tsx;
+   app-source-baseline.md, "Heavy controls"). The signer reads, moves between pages and zooms; the document comes from
+   the portal (no Open) and Download is the portal's own button. *@
+@using Syncfusion.Blazor.SfPdfViewer
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SigningStore Store
+@implements IAsyncDisposable
+
+@if (state == ViewerState.Failed)
+{
+    <div class="viewer-area">
+        <ErrorState Title="We couldn't open this document." Message="Check your connection and try again.">
+            <SfButton CssClass="e-primary" OnClick="RetryAsync">Try again</SfButton>
+        </ErrorState>
+    </div>
+}
+else
+{
+    <div class="viewer-area" data-viewer-state="@(state == ViewerState.Ready ? "ready" : "loading")">
+        @if (state == ViewerState.Loading)
+        {
+            <AppLoading Variant="overlay" Label="Loading document…" />
+        }
+        @if (document is not null)
+        {
+            @* EnableDownload stays at its default (true): in 34.2.8 GetDocumentAsync returns null when it is off. The
+               toolbar shows only page navigation and zoom, so the viewer's own Download button is not offered. *@
+            <SfPdfViewer2 @key="attempt" @ref="viewer" ID="@ViewerId" Height="100%" Width="100%"
+                          EnableNavigationToolbar="false" EnableAnnotationToolbar="false" EnablePrint="false"
+                          EnableThumbnailPanel="false" EnableBookmarkPanel="false" EnableCommentPanel="false" EnableTextSearch="false"
+                          EnableErrorDialog="false">
+                <PdfViewerToolbarSettings ToolbarItems="toolbarItems" />
+                <PdfViewerContextMenuSettings EnableContextMenu="false" />
+                <PdfViewerSignatureDialogSettings SignatureFonts="SignatureFonts" />
+                <PdfViewerHandwrittenSignatureSettings SignatureDialogSettings="dialogSettings" />
+                <PdfViewerEvents Created="OnCreated" DocumentLoaded="OnDocumentLoaded" DocumentLoadFailed="OnDocumentLoadFailed"
+                                 AddSignature="OnSignatureAdded" RemoveSignature="OnSignatureRemoved"
+                                 FormFieldPropertyChanged="OnFieldChanged" FormFieldFocusOut="OnFieldFocusOut" />
+            </SfPdfViewer2>
+        }
+    </div>
+}
+
+@code {
+    public const string ViewerId = "signing-viewer";
+    // The viewer lays form fields out in CSS pixels at 96 dpi; the catalogue stores PDF points (72 per inch).
+    private const double PointsToViewer = 96d / 72d;
+    // A file the engine cannot read can end with neither DocumentLoaded nor DocumentLoadFailed; never spin for ever.
+    private static readonly TimeSpan LoadTimeout = TimeSpan.FromSeconds(120);
+    // Open-licence handwriting fonts for the Type tab (wwwroot/css/fonts.css), as the reference.
+    public static readonly string[] SignatureFonts = ["Dancing Script", "Sacramento", "Pacifico", "Caveat"];
+
+    /// <summary>A same-origin path under wwwroot (documents/...), or null when <see cref="Bytes"/> is given.</summary>
+    [Parameter] public string? Url { get; set; }
+    /// <summary>The PDF itself (a signed copy held in memory).</summary>
+    [Parameter] public byte[]? Bytes { get; set; }
+    /// <summary>Fields to add once the document has loaded; empty for a read-only review.</summary>
+    [Parameter] public IReadOnlyList<FieldDefinition> Fields { get; set; } = [];
+    /// <summary>The signed-in person's name, filled into the signature dialog's Type tab when its name box is empty.</summary>
+    [Parameter] public string? TypedName { get; set; }
+    [Parameter] public EventCallback OnReady { get; set; }
+    [Parameter] public EventCallback OnValuesChanged { get; set; }
+
+    private enum ViewerState { Loading, Ready, Failed }
+
+    private SfPdfViewer2? viewer;
+    private ViewerState state = ViewerState.Loading;
+    private byte[]? document;
+    private int attempt;
+    private bool seeded;
+    private CancellationTokenSource? timeout;
+    private DotNetObjectReference<DocumentViewer>? self;
+    private int helperId;
+
+    private readonly List<Syncfusion.Blazor.SfPdfViewer.ToolbarItem> toolbarItems = [Syncfusion.Blazor.SfPdfViewer.ToolbarItem.PageNavigationTool, Syncfusion.Blazor.SfPdfViewer.ToolbarItem.MagnificationTool];
+    private readonly PdfViewerSignatureDialogSettings dialogSettings = new() { SignatureFonts = SignatureFonts };
+
+    protected override async Task OnInitializedAsync() => await OpenAsync();
+
+    private async Task OpenAsync()
+    {
+        state = ViewerState.Loading;
+        StartTimeout();
+        try
+        {
+            document = Bytes ?? await Http.GetByteArrayAsync(Url);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"The document could not be fetched: {e.Message}");
+            state = ViewerState.Failed;
+        }
+    }
+
+    private void StartTimeout()
+    {
+        timeout?.Cancel();
+        timeout = new CancellationTokenSource();
+        var token = timeout.Token;
+        _ = Task.Delay(LoadTimeout, token).ContinueWith(t =>
+        {
+            if (t.IsCanceled || state != ViewerState.Loading) return;
+            state = ViewerState.Failed;
+            InvokeAsync(StateHasChanged);
+        }, TaskScheduler.Default);
+    }
+
+    // The document is handed to the viewer as bytes once it exists (pdfviewer-methods.md, LoadAsync(byte[], string)).
+    private async Task OnCreated()
+    {
+        if (viewer is null || document is null) return;
+        // A typed signature is saved into the PDF as text in its handwriting font. The viewer looks for that font among
+        // the system's fonts, which a browser does not expose, and then in FallbackFontCollection (pdfviewer-properties.md).
+        if (Fields.Count > 0)
+        {
+            foreach (var (family, bytes) in await LoadSignatureFontsAsync())
+                if (!viewer.FallbackFontCollection.ContainsKey(family)) viewer.FallbackFontCollection[family] = new MemoryStream(bytes, writable: false);
+        }
+        await viewer.LoadAsync(document, null);
+    }
+
+    private static Dictionary<string, byte[]>? signatureFonts;
+
+    private async Task<Dictionary<string, byte[]>> LoadSignatureFontsAsync()
+    {
+        if (signatureFonts is not null) return signatureFonts;
+        var fonts = new Dictionary<string, byte[]>();
+        foreach (var family in SignatureFonts)
+        {
+            try { fonts[family] = await Http.GetByteArrayAsync($"fonts/{family.ToLowerInvariant().Replace(' ', '-')}-latin-400-normal.ttf"); }
+            catch (HttpRequestException e) { Console.WriteLine($"Signature font {family} not loaded: {e.Message}"); }
+        }
+        return signatureFonts = fonts;
+    }
+
+    private async Task OnDocumentLoaded(LoadEventArgs args)
+    {
+        timeout?.Cancel();
+        if (!seeded && viewer is not null)
+        {
+            seeded = true;
+            var fields = new List<FormFieldInfo>();
+            foreach (var f in Fields)
+            {
+                var bounds = new Bound { X = f.Bounds.X * PointsToViewer, Y = f.Bounds.Y * PointsToViewer, Width = f.Bounds.Width * PointsToViewer, Height = f.Bounds.Height * PointsToViewer };
+                var tooltip = f.Required ? $"{f.Label} (required)" : $"{f.Label} (optional)";
+                fields.Add(f.Type == FieldType.Signature
+                    ? new SignatureField { Name = f.Name, PageNumber = f.Page, Bounds = bounds, IsRequired = f.Required, TooltipText = tooltip }
+                    : new TextBoxField { Name = f.Name, PageNumber = f.Page, Bounds = bounds, IsRequired = f.Required, TooltipText = tooltip });
+            }
+            if (fields.Count > 0) await viewer.AddFormFieldsAsync(fields);
+        }
+        state = ViewerState.Ready;
+        if (Fields.Count > 0)
+        {
+            self ??= DotNetObjectReference.Create(this);
+            helperId = await JS.InvokeAsync<int>("esignViewer.attach", ViewerId, TypedName ?? "", self);
+            await RestoreSavedSignatureAsync();
+        }
+        await OnReady.InvokeAsync();
+        await OnValuesChanged.InvokeAsync();
+    }
+
+    // ---- Signature dialog and the saved signature (Pages/Sign/ViewerInternals.cs, State/SavedSignature.cs) ----
+
+    private string creatingKind = "Draw";
+    private bool creatingKept = true;
+    private string? creatingText;
+
+    /// <summary>A signature saved on an earlier document this session is offered again here.</summary>
+    private async Task RestoreSavedSignatureAsync()
+    {
+        var saved = Store.SavedSignature;
+        if (!saved.HasValue) return;
+        await JS.InvokeVoidAsync("esignViewer.restoreSignature", ViewerId, saved.ModuleState);
+        ViewerInternals.RestoreSaved(viewer, saved.Kind!, saved.TypedText);
+        await JS.InvokeVoidAsync("esignViewer.setSavedKind", helperId, saved.Kind);
+    }
+
+    /// <summary>Create was pressed on a tab, with "Save signature" checked or not, and for Type with this name.</summary>
+    [JSInvokable]
+    public void SignatureCreating(string kind, bool keep, string? typedText)
+    {
+        creatingKind = kind;
+        creatingKept = keep;
+        creatingText = typedText;
+        ViewerInternals.SetSignatureType(viewer, kind);
+    }
+
+    [JSInvokable]
+    public void SignatureTabChanged(int previousIndex, int index) => ViewerInternals.SelectTab(viewer, previousIndex, index);
+
+    [JSInvokable]
+    public void SaveBoxChanged(int tab, bool isChecked) => ViewerInternals.SetSaveBox(viewer, tab, isChecked);
+
+    [JSInvokable]
+    public void TypedTextChanged(string text) => ViewerInternals.UpdateTypedText(viewer, text);
+
+    /// <summary>Records the signature the viewer saved, or forgets it when the person cleared "Save signature" on the
+    /// tab they signed from, so neither this document nor the next one offers it again.</summary>
+    private async Task OnSignatureAdded(AddSignatureEventArgs args)
+    {
+        if (creatingKept && await JS.InvokeAsync<string?>("esignViewer.captureSignature", ViewerId) is { } module)
+            Store.SavedSignature.Remember(creatingKind, creatingText, module);
+        else Store.SavedSignature.Forget();
+        if (helperId != 0) await JS.InvokeVoidAsync("esignViewer.setSavedKind", helperId, Store.SavedSignature.Kind);
+        (creatingKind, creatingKept, creatingText) = ("Draw", true, null);
+        await OnValuesChanged.InvokeAsync();
+    }
+
+    // On failure the viewer is taken down, or its own error dialog would cover the message.
+    private void OnDocumentLoadFailed(LoadFailedEventArgs args)
+    {
+        timeout?.Cancel();
+        state = ViewerState.Failed;
+    }
+
+    private Task OnSignatureRemoved(RemoveSignatureEventArgs args) => OnValuesChanged.InvokeAsync();
+    private Task OnFieldChanged(FormFieldPropertyChangedEventArgs args) => OnValuesChanged.InvokeAsync();
+    private Task OnFieldFocusOut(FormFieldFocusOutEventArgs args) => OnValuesChanged.InvokeAsync();
+
+    private async Task RetryAsync()
+    {
+        seeded = false;
+        attempt++;
+        document = null;
+        await OpenAsync();
+    }
+
+    /// <summary>Current value of every field, by name.</summary>
+    public async Task<Dictionary<string, string>> ReadValuesAsync()
+    {
+        var values = new Dictionary<string, string>();
+        if (viewer is null || state != ViewerState.Ready) return values;
+        foreach (var f in await viewer.GetFormFieldsAsync())
+        {
+            if (string.IsNullOrEmpty(f.Name)) continue;
+            values[f.Name] = f switch { SignatureField s => s.Value ?? "", TextBoxField t => t.Value ?? "", _ => "" };
+        }
+        return values;
+    }
+
+    /// <summary>Goes to the field's page and brings the field to the middle of the view.</summary>
+    public async Task FocusFieldAsync(FieldDefinition field)
+    {
+        if (viewer is null) return;
+        var id = (await viewer.GetFormFieldsAsync()).FirstOrDefault(f => f.Name == field.Name)?.Id;
+        await viewer.GoToPageAsync(field.Page);
+        if (id is not null) await JS.InvokeVoidAsync("esignViewer.centreField", ViewerId, id, field.Name);
+    }
+
+    /// <summary>Empties one field (removes a signature) so it can be filled again.</summary>
+    public async Task ClearFieldAsync(string name)
+    {
+        if (viewer is null) return;
+        var field = (await viewer.GetFormFieldsAsync()).FirstOrDefault(f => f.Name == name);
+        switch (field)
+        {
+            case SignatureField s: s.Value = ""; await viewer.UpdateFormFieldsAsync([s]); break;
+            case TextBoxField t: t.Value = ""; await viewer.UpdateFormFieldsAsync([t]); break;
+        }
+    }
+
+    /// <summary>The working copy with signatures and field values, as the viewer saves it.</summary>
+    public async Task<byte[]> SaveAsync()
+    {
+        if (viewer is null) throw new InvalidOperationException("The document is not open.");
+        // Field borders and fills are editing aids; clear them so they are not baked into the signed copy.
+        var fields = await viewer.GetFormFieldsAsync();
+        foreach (var f in fields) { f.BorderColor = "transparent"; f.BackgroundColor = "transparent"; }
+        if (fields.Count > 0) await viewer.UpdateFormFieldsAsync(fields);
+        return await viewer.GetDocumentAsync() ?? throw new InvalidOperationException("The viewer could not export the document.");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        timeout?.Cancel();
+        if (helperId != 0) { try { await JS.InvokeVoidAsync("esignViewer.detach", helperId); } catch (JSDisconnectedException) { } }
+        self?.Dispose();
+    }
+}

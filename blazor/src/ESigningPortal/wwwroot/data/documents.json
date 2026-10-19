@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "fixtureVersion": 1,
+  "profile": {
+    "id": "peter-hale",
+    "fullName": "Peter Hale",
+    "firstName": "Peter",
+    "email": "peter.hale@example.com",
+    "role": "Operations Analyst",
+    "company": "Northwind Harbor Logistics"
+  },
+  "documents": [
+    {
+      "id": "employment-offer-letter",
+      "title": "Employment Offer Letter",
+      "sender": { "name": "Dana Whitlock", "organisation": "People Operations" },
+      "receivedDaysAgo": 2,
+      "dueInDays": 5,
+      "pageCount": 3,
+      "file": "documents/employment-offer-letter.pdf",
+      "baselineStatus": "ready",
+      "signedDaysAgo": null,
+      "fields": [
+        { "name": "preferred_name", "label": "Preferred name", "type": "text", "page": 1, "bounds": { "X": 210, "Y": 668, "Width": 220, "Height": 24 }, "required": false },
+        { "name": "employee_signature", "label": "Your signature", "type": "signature", "page": 3, "bounds": { "X": 72, "Y": 390, "Width": 230, "Height": 60 }, "required": true }
+      ]
+    },
+    {
+      "id": "confidentiality-agreement",
+      "title": "Confidentiality Agreement",
+      "sender": { "name": "Dana Whitlock", "organisation": "People Operations" },
+      "receivedDaysAgo": 2,
+      "dueInDays": 1,
+      "pageCount": 2,
+      "file": "documents/confidentiality-agreement.pdf",
+      "baselineStatus": "ready",
+      "signedDaysAgo": null,
+      "fields": [
+        { "name": "acknowledgment_signature", "label": "Acknowledgment of definitions", "type": "signature", "page": 1, "bounds": { "X": 72, "Y": 660, "Width": 230, "Height": 60 }, "required": true },
+        { "name": "employee_signature", "label": "Your signature", "type": "signature", "page": 2, "bounds": { "X": 72, "Y": 520, "Width": 230, "Height": 60 }, "required": true }
+      ]
+    },
+    {
+      "id": "handbook-acknowledgment",
+      "title": "Employee Handbook Acknowledgment",
+      "sender": { "name": "Dana Whitlock", "organisation": "People Operations" },
+      "receivedDaysAgo": 1,
+      "dueInDays": 9,
+      "pageCount": 1,
+      "file": "documents/handbook-acknowledgment.pdf",
+      "baselineStatus": "ready",
+      "signedDaysAgo": null,
+      "fields": [
+        { "name": "employee_signature", "label": "Your signature", "type": "signature", "page": 1, "bounds": { "X": 72, "Y": 560, "Width": 230, "Height": 60 }, "required": true }
+      ]
+    },
+    {
+      "id": "direct-deposit-authorization",
+      "title": "Direct Deposit Authorization",
+      "sender": { "name": "Dana Whitlock", "organisation": "People Operations" },
+      "receivedDaysAgo": 6,
+      "dueInDays": null,
+      "pageCount": 1,
+      "file": "documents/direct-deposit-authorization.pdf",
+      "baselineStatus": "completed",
+      "signedDaysAgo": 4,
+      "fields": []
+    }
+  ]
+}

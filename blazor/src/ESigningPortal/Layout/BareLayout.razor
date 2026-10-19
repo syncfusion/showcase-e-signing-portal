@@ -1,0 +1,11 @@
+@* For /healthz, which stands outside the shell (factory/standards/health-check.md). *@
+@inherits LayoutComponentBase
+@inject IJSRuntime JS
+@Body
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await JS.InvokeVoidAsync("esignApp.removeBoot");
+    }
+}
